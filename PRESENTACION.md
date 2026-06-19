@@ -108,22 +108,21 @@ Resultado tipico:
 
 ```
 .github/
-├── copilot-instructions.md          → Reglas globales del proyecto
+├── copilot-instructions.md              → Reglas globales del proyecto
 ├── instructions/
-│   ├── domain.instructions.md       → Instrucciones para capa domain
-│   ├── application.instructions.md  → Instrucciones para capa application
-│   ├── infrastructure.instructions.md → Instrucciones para capa infrastructure
-│   └── presentation.instructions.md → Instrucciones para capa presentation
+│   ├── domain-layer.instructions.md     → Auto-activa en domain/
+│   ├── usecases-layer.instructions.md   → Auto-activa en usecases/
+│   ├── adapters-layer.instructions.md   → Auto-activa en adapter/
+│   └── controllers-layer.instructions.md → Auto-activa en controller/
 ├── prompts/
-│   ├── create-use-case.prompt.md    → Slash command /create-use-case
-│   ├── create-port.prompt.md        → Slash command /create-port
-│   ├── create-adapter.prompt.md     → Slash command /create-adapter
-│   └── review-clean-arch.prompt.md  → Slash command /review-clean-arch
+│   ├── new-feature.prompt.md            → Slash command /new-feature
+│   ├── new-usecase.prompt.md            → Slash command /new-usecase
+│   └── review-clean-arch.prompt.md      → Slash command /review-clean-arch
 ├── skills/
-│   └── bcpr-testing/SKILL.md        → Skill de testing con patrones BCPR
+│   └── bcpr-testing/SKILL.md            → Skill de testing con patrones BCPR
 └── agents/
-    ├── bcpr-architect.agent.md      → Agente especializado en arquitectura
-    └── bcpr-qa.agent.md             → Agente especializado en QA
+    ├── bcpr-architect.agent.md          → Agente especializado en arquitectura
+    └── bcpr-qa.agent.md                 → Agente especializado en QA
 ```
 
 ### El Concepto Clave: Instrucciones por Capa
