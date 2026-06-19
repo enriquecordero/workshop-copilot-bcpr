@@ -9,6 +9,7 @@
 - [Ejercicio 1: Montar el Marco de Copilot para BCPR](#-ejercicio-1-montar-el-marco-de-copilot-para-bcpr)
 - [Ejercicio 2: Construir un Feature Nuevo con el Marco](#-ejercicio-2-construir-un-feature-nuevo-con-el-marco)
 - [Ejercicio 3: Tests y Validacion con el Agente QA](#-ejercicio-3-tests-y-validacion-con-el-agente-qa)
+- [Bonus: Introduccion a Harness Engineering](#bonus-introduccion-a-harness-engineering)
 - [Referencia Rapida](#-referencia-rapida)
 - [Recursos Adicionales](#-recursos-adicionales)
 
@@ -1410,6 +1411,164 @@ O usa `/fix` seleccionando el codigo del test que falla.
 - [ ] Tests de integracion del controller (supertest, endpoints CRUD)
 - [ ] Revision QA completada
 - [ ] Revision de arquitectura con `/review-clean-arch`
+
+---
+
+## Bonus: Introduccion a Harness Engineering
+
+> **Nivel avanzado.** Este concepto va mas alla de Copilot -- aplica a cualquier AI coding assistant (Claude Code, Cursor, Copilot, etc.). Si el tiempo lo permite, el instructor puede presentarlo como cierre conceptual.
+
+### Que es Harness Engineering?
+
+En los Ejercicios 1-3 aprendimos a **personalizar** la AI con instrucciones, prompts y agents. Pero hay un problema: la AI genera codigo facil y rapido... y eso es precisamente el riesgo. **Generar no es el cuello de botella -- validar lo es.**
+
+**Harness Engineering** (o Spec-Driven Development con AI) es una disciplina que trata a la AI como un **craftsman junior**: talentoso pero que necesita un pipeline riguroso para garantizar calidad. En vez de confiar en que la AI "lo hara bien", construimos un **harness** (arnes) que:
+
+1. **Fuerza especificacion ANTES de codigo** -- no se escribe ni una linea sin un contrato aprobado
+2. **Usa multiples agentes especializados** -- cada uno con un rol estricto y sin solapamiento
+3. **Tiene exactamente UN punto de aprobacion humana** -- y esta en el lugar de maximo leverage
+4. **Valida con mutacion, no con cobertura** -- la cobertura dice "se ejecuto", la mutacion dice "los tests realmente detectan bugs"
+
+> **Referencia:** [betta-tech/harness-sdd](https://github.com/betta-tech/harness-sdd/tree/uncle-bob-harness) -- implementacion inspirada en los principios de Robert C. Martin (Uncle Bob).
+
+---
+
+### El Pipeline: 5 Fases, 1 Puerta
+
+```
+ CONVERSACION       DESTILACION        PUERTA          TDD ESTRICTO       REVIEW +
+ (Spec Partner)     (Gherkin Author)   HUMANA          (Craftsman)         MUTACION
+                                                                          (Judge)
+ ┌──────────┐      ┌──────────┐      ┌────────┐      ┌──────────┐      ┌──────────┐
+ │ Debatir  │ ──>  │ Traducir │ ──>  │ Humano │ ──>  │ Rojo ->  │ ──>  │ Revisar  │
+ │ el spec  │      │ a Gherkin│      │ aprueba│      │ Verde -> │      │ + Mutar  │
+ │          │      │ .feature │      │ o pide │      │ Refactor │      │ tests    │
+ └──────────┘      └──────────┘      │ cambios│      └──────────┘      └──────────┘
+                                     └────────┘
+ project-spec.md   features/*.feature   ⏸ STOP       src/ + tests/     progress/*.md
+```
+
+**Por que este orden?**
+
+- Corregir un spec cuesta minutos. Corregir codigo cuesta horas.
+- La puerta humana esta ANTES del codigo, donde el costo de cambio es minimo.
+- Despues de la puerta, la AI trabaja autonomamente con TDD estricto.
+
+---
+
+### Los 5 Roles del Harness (como se mapean a BCPR)
+
+| Rol en Harness | Que hace | Equivalente BCPR (lo que ya creamos) |
+|---|---|---|
+| **Spec Partner** | Debate el spec contigo, produce `project-spec.md` | Modo Ask + `@workspace` (Paso 1.1) |
+| **Gherkin Author** | Traduce el spec a contratos ejecutables (`.feature`) | `/review-clean-arch` (verifica contratos) |
+| **Craftsman (TDD)** | Escribe test -> codigo -> refactor, uno a la vez | Modo Agent + skill `bcpr-testing` |
+| **Judge** | Revisa el codigo, rechaza lo que no fue pedido o no esta testeado | Agente **BCPR QA** |
+| **Mutation Tester** | Inyecta defectos al codigo y verifica que los tests los detecten | `npm test` + Stryker (avanzado) |
+
+> **Insight:** Ya tienen 3 de los 5 roles implementados. Lo que falta es **el pipeline** (el orden disciplinado) y **la puerta humana** (aprobar el spec antes de codear).
+
+---
+
+### Principio Clave: El Estado Vive en Disco, No en el Chat
+
+En el workshop usamos prompts en el chat. Pero los chats se pierden, los context windows se llenan, las sesiones se cortan. El harness resuelve esto:
+
+```
+progress/
+├── spec_notification.md          # Spec negociado (que, por que, alcance)
+├── tdd_notification.md           # Lineage: que test genero que codigo
+├── judge_notification.md         # Veredicto del review
+└── mutation_notification.md      # Score de mutacion + sobrevivientes
+```
+
+**Cada fase escribe su resultado en un archivo.** Si la sesion se cae, el siguiente agente lee el archivo y continua. No hay "telefono descompuesto" entre agentes.
+
+> **Aplicacion practica para BCPR:** En vez de confiar en que el chat recuerde el contexto, guarden las decisiones de arquitectura en archivos de progreso. El agente BCPR Architect puede escribir `progress/design_<feature>.md` antes de que el TDD Craftsman empiece a codear.
+
+---
+
+### Demo Rapida: Un Ciclo de Harness para Notificaciones
+
+Si tuvieramos el harness completo, el flujo para agregar "eliminar notificacion" seria:
+
+**Fase 1 -- Spec Partner (Modo Ask):**
+```
+@workspace Quiero agregar la funcionalidad de eliminar una notificacion
+por ID. Debatamos: que pasa si no existe? Debe ser soft delete o hard
+delete? Que responde el endpoint? Escribe el resultado en progress/spec_delete-notification.md
+```
+
+**Fase 2 -- Gherkin Author (Modo Agent):**
+```
+@workspace Lee progress/spec_delete-notification.md y genera el contrato
+en features/delete-notification.feature usando formato Gherkin:
+  Scenario: eliminar notificacion existente -> 200
+  Scenario: eliminar notificacion inexistente -> 404
+  Scenario: eliminar notificacion ya archivada -> 422
+```
+
+**Fase 3 -- Puerta Humana:** Tu lees el `.feature`, apruebas o pides cambios. **NINGUN codigo se escribe hasta que apruebes.**
+
+**Fase 4 -- TDD Craftsman (Modo Agent):**
+```
+@workspace Lee features/delete-notification.feature. Para cada scenario,
+sigue el ciclo Rojo-Verde-Refactor:
+1. Escribe el test que falla (ROJO)
+2. Escribe el minimo codigo para que pase (VERDE)
+3. Refactoriza sin romper tests
+Documenta cada ciclo en progress/tdd_delete-notification.md
+```
+
+**Fase 5 -- Judge (Agente BCPR QA):**
+```
+@BCPR QA Lee progress/tdd_delete-notification.md y el codigo generado.
+Verifica: hay codigo sin test? Hay test sin scenario? Se violan patrones?
+Escribe el veredicto en progress/judge_delete-notification.md
+```
+
+---
+
+### Cuando Usar Cada Enfoque
+
+| Situacion | Enfoque | Por que |
+|---|---|---|
+| Fix rapido, bug conocido | Copilot directo (prompt + `/fix`) | Bajo riesgo, no necesita spec |
+| Feature nuevo, alcance claro | Marco BCPR (Ej. 1-3 del workshop) | Las instrucciones + agents cubren |
+| Feature complejo, multiples edge cases | **Harness completo** | Necesitas spec negociado + contratos + TDD |
+| Onboarding de dev nuevo | Modo Ask + Architect agent | Exploracion, no generacion |
+| Refactor grande, muchos archivos | Harness con Judge estricto | El Judge rechaza cambios no pedidos |
+
+---
+
+### Las 3 Leyes del TDD en el Harness
+
+Robert C. Martin (Uncle Bob) define 3 reglas que el harness impone:
+
+1. **No escribas codigo de produccion excepto para hacer pasar un test que falla**
+2. **No escribas mas de un test unitario que sea suficiente para fallar** (errores de compilacion cuentan como fallo)
+3. **No escribas mas codigo de produccion del necesario para pasar el test actual**
+
+> **Por que esto importa con AI:** La AI tiende a generar codigo "de mas" -- features no pedidos, edge cases inventados, abstracciones prematuras. Las 3 leyes la frenan: solo genera lo que un test demanda.
+
+---
+
+### Para Llevar: Harness Engineering en 1 Minuto
+
+```
+SIN HARNESS:
+  "AI, crea el feature" → codigo → (esperamos que este bien) → bugs en produccion
+
+CON INSTRUCCIONES (lo que hicimos hoy):
+  "AI, crea el feature" → instrucciones guian → codigo mejor → tests → verificar
+
+CON HARNESS COMPLETO:
+  spec negociado → contrato aprobado → TDD estricto → review → mutacion → codigo confiable
+```
+
+Cada nivel agrega disciplina. El workshop de hoy les dio el nivel 2. El harness es el nivel 3 -- para cuando lo necesiten.
+
+> **Recurso:** [github.com/betta-tech/harness-sdd](https://github.com/betta-tech/harness-sdd/tree/uncle-bob-harness) -- template completo con agents, docs, y workflow para implementar un harness en su proyecto.
 
 ---
 
