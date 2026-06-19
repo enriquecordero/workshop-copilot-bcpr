@@ -1,9 +1,12 @@
 import 'reflect-metadata';
 import express from 'express';
-import { injector } from '../injection/injector';
 import { loggerMiddleware } from '../middlewares/logger-middleware';
 import { errorInterceptor } from '../middlewares/interceptor/error-interceptor';
-import { NotificationController } from '../../features/notification/infrastructure/controller/notification-controller';
+
+// Los participantes importaran y registraran su controller aqui durante el Ejercicio 2
+// Ejemplo:
+// import { injector } from '../injection/injector';
+// import { NotificationController } from '../../features/notification/infrastructure/controller/notification-controller';
 
 export function createApp(): express.Application {
   const app = express();
@@ -15,10 +18,11 @@ export function createApp(): express.Application {
     res.json({ status: 'ok', timestamp: new Date().toISOString() });
   });
 
-  const router = express.Router();
-  const notificationController = injector.get(NotificationController) as NotificationController;
-  notificationController.registerRoutes(router);
-  app.use(router);
+  // Los participantes agregaran sus rutas aqui:
+  // const router = express.Router();
+  // const controller = injector.get(NotificationController) as NotificationController;
+  // controller.registerRoutes(router);
+  // app.use(router);
 
   app.use(errorInterceptor);
 
