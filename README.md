@@ -936,7 +936,7 @@ features/notification/application/usecases/list-notifications-use-case.ts
 
 ---
 
-## Ejercicio 2: Construir un Feature Nuevo con el Marco (50 min)
+## Ejercicio 2: Construir un Feature Nuevo con el Marco (45 min)
 
 > **Ahora usamos lo que construimos.** En lugar de escribir boilerplate, dejamos que nuestros prompts, instrucciones y agents hagan el trabajo pesado.
 
@@ -1347,7 +1347,7 @@ Guarda el resultado en: docs/test-plan-notifications.md
 
 **Evalua el plan generado:**
 - ¿Los casos son especificos o genericos?
-- ¿Cubren los 6 endpoints (GET lista, GET vacio, POST valido, POST invalido tipo, POST sin campos, PATCH read, PATCH 404)?
+- ¿Cubren los 3 endpoints en sus 7 escenarios (GET lista, GET vacio, POST valido, POST invalido tipo, POST sin campos, PATCH read, PATCH 404)?
 - ¿Incluyen edge cases reales (userId vacio, notificationId inexistente, tipo invalido)?
 - ¿Mencionan seguridad (datos sensibles en logs, IDOR)?
 
