@@ -58,6 +58,9 @@ El feature se integra al proyecto existente asi:
 
 ```
 src/
+├── examples/
+│   └── example-use-case.ts            # Referencia del patron (Port + UseCase + DI)
+│
 ├── core/                              # YA EXISTE - modificamos injector.ts y app.ts
 │   ├── server/
 │   │   ├── server.ts                  # Express server (puerto 3000)
@@ -223,12 +226,13 @@ git --version
 
 | Hora | Bloque | Actividad | Modo Copilot |
 |------|--------|-----------|--------------|
-| 0:00 - 0:15 | Bienvenida | Setup, intro a la arquitectura del proyecto, demo del flujo Controller->UseCase->Port->Adapter | - |
-| 0:15 - 1:00 | Ejercicio 1 | Montar el marco de Copilot: instrucciones, prompts, skill, agents | Ask -> Agent |
+| 0:00 - 0:15 | Bienvenida | Setup, intro a la arquitectura, demo del flujo Controller->UseCase->Port->Adapter | - |
+| 0:15 - 0:20 | Demo | **"Antes"**: pedir un use case SIN instrucciones, ver resultado generico | Agent |
+| 0:20 - 1:00 | Ejercicio 1 | Montar el marco de Copilot + comparar **"Despues"** al final | Ask -> Agent |
 | 1:00 - 1:05 | Break | Descanso y Q&A rapido | - |
-| 1:05 - 1:55 | Ejercicio 2 | Construir el feature de Notificaciones usando el marco | Agent |
-| 1:55 - 2:00 | Break | Descanso rapido | - |
-| 2:00 - 2:25 | Ejercicio 3 | Tests y validacion con el skill y el agente QA | Agent + /tests |
+| 1:05 - 1:50 | Ejercicio 2 | Construir el feature de Notificaciones usando el marco + verificar con curl | Agent + Tab |
+| 1:50 - 1:55 | Break | Descanso rapido | - |
+| 1:55 - 2:25 | Ejercicio 3 | Tests, `npm test`, validacion con el agente QA | Agent + /tests |
 | 2:25 - 2:30 | Cierre | Recap, que commitear, y como mantener las customizaciones | - |
 
 > **Nota para el instructor:** Si el setup toma mas de 15 minutos, reduce los pasos bonus del Ejercicio 2. Lo mas importante es que completen el Ejercicio 1 (el marco) y al menos el scaffold del feature en el Ejercicio 2.
@@ -249,6 +253,29 @@ git --version
 
 ---
 
+### Paso 1.0: Demo "Antes vs Despues" -- por que importa el marco
+
+> **Este paso es clave.** Vamos a ver que genera Copilot SIN instrucciones para luego comparar.
+
+**PROMPT en Modo Agent (sin haber creado ningun archivo .github todavia):**
+
+```
+Crea un use case llamado ListNotificationsUseCase en
+features/notification/application/usecases/list-notifications-use-case.ts
+```
+
+**Guarda el resultado** (o toma screenshot). Observa:
+- Usa la DI correcta (`injection-js` con `@Injectable` y `@Inject`)... o inventa otra?
+- Incluye logging estructurado con `AbstractLogger`?
+- Inyecta un Port con `InjectionToken` o importa el adapter directamente?
+- Retorna ViewModels transformados con `ConverterFunction`?
+
+> **Spoiler:** Probablemente genera algo generico que no sigue nuestros patrones. **Al final del Ejercicio 1**, vamos a pedir exactamente lo mismo y comparar. Esa diferencia es el ROI del marco.
+
+**Deshaz los cambios** (Copilot: `Ctrl+Z` o rechaza los archivos) antes de continuar.
+
+---
+
 ### Paso 1.1: Explorar el proyecto con Modo Ask
 
 > **IMPORTANTE:** Asegurate de estar en **Modo Ask**. Este modo NO modifica archivos.
@@ -261,12 +288,14 @@ Antes de crear nada, hagamos que Copilot entienda nuestro proyecto.
 @workspace Analiza la arquitectura de este proyecto y respondeme:
 
 1. Que patron de arquitectura se usa? Describe las capas.
-2. Muestra un ejemplo concreto del flujo desde un controller
-   hasta el adapter (usa el feature de notification como ejemplo).
+2. Muestra como se conecta el server.ts con app.ts y los middlewares.
 3. Como funciona la inyeccion de dependencias? Que es un InjectionToken?
+   (mira el ejemplo en src/examples/example-use-case.ts)
 4. Que es un ConverterFunction y como se usa?
-5. Como registra el controller sus rutas en el Express Router?
-6. Donde se registran los providers de cada feature?
+   (mira core/middlewares/converter/converter-function.ts)
+5. Como se manejan los errores? (mira core/error/)
+6. Donde se registran los providers de un feature?
+   (mira core/injection/injector.ts)
 ```
 
 > **Observa:** Copilot analiza el proyecto real y te explica la arquitectura. Esto es util tanto para onboarding de nuevos devs como para confirmar que Copilot "entiende" el codebase.
@@ -335,7 +364,7 @@ Estas instrucciones se activan **automaticamente** segun el archivo que estas ed
 
 ```
 @workspace Crea 4 archivos de instrucciones especificas por capa.
-Mira los archivos existentes en features/ para entender los patrones reales:
+Mira src/examples/example-use-case.ts y los archivos en core/ para entender los patrones:
 
 1. .github/instructions/domain-layer.instructions.md
 ---
@@ -378,7 +407,7 @@ Estas editando un USE CASE. Reglas del proyecto:
 - Usar converters de logging para datos sensibles (no loguear tarjetas, SSN, etc.)
 - Retornar ViewModels (no entidades de dominio)
 - Para errores: lanzar NotFoundError, UnprocessableEntityError, etc.
-- Referencia: ver features/notification/application/usecases/ para ejemplos
+- Referencia: ver src/examples/example-use-case.ts para el patron base
 
 
 3. .github/instructions/adapters-layer.instructions.md
@@ -418,7 +447,7 @@ Estas editando un CONTROLLER (entry point HTTP). Reglas del proyecto:
 - Retorno: JSON response con estructura { success: true, data: ViewModel[] }
 - Errores se manejan via el errorInterceptor middleware de Express
 - El archivo debe estar en infrastructure/controller/
-- Referencia: ver features/notification/infrastructure/controller/notification-controller.ts
+- Referencia: ver copilot-instructions.md para convenciones de controllers
 ```
 
 > **Momento wow:** A partir de ahora, cuando alguien del equipo edite un archivo en `domain/`, Copilot sabra que no debe sugerir imports de Express. Si edita un use case, sabra que debe incluir logging. Si edita un controller, sabra que debe validar input con class-validator y delegar al use case.
@@ -433,7 +462,7 @@ Los prompt files son **tareas reutilizables** que se invocan como `/nombre` en e
 
 ```
 @workspace Crea 3 prompt files reutilizables para el equipo BCPR.
-Basa los patrones en los archivos existentes del core y del feature notification:
+Basa los patrones en src/examples/example-use-case.ts y los archivos del core:
 
 1. .github/prompts/new-feature.prompt.md
 ---
@@ -445,56 +474,28 @@ argument-hint: 'nombre del feature (ej: notification, transfer, loan)'
 
 @workspace Crea la estructura completa para un nuevo feature llamado
 "${input:featureName}" en features/${input:featureName}/
-siguiendo los patrones existentes del proyecto.
+siguiendo los patrones del proyecto.
 
-Genera todos estos archivos:
+Usa como referencia:
+- src/examples/example-use-case.ts (patron de Port, InjectionToken, Use Case)
+- core/middlewares/converter/converter-function.ts (interface ConverterFunction)
+- core/error/ (BaseError, NotFoundError, UnprocessableEntityError)
+- core/logger/logger.ts (AbstractLogger)
 
-## Domain
-- domain/entities/${input:featureName}.ts
-  Entidad con propiedades, constructor y metodos de negocio.
-  Referencia: features/notification/domain/entities/notification.ts
+Genera estos archivos siguiendo las instrucciones de copilot-instructions.md:
 
-- domain/${input:featureName}-type.ts (si aplica)
-  Enums de dominio.
-
-## Application
-- application/ports/read-${input:featureName}-port.ts
-  Interface ReadPort + InjectionToken IRead${input:featureName}PortProvider.
-  Referencia: features/notification/application/ports/read-notifications-port.ts
-
-- application/ports/write-${input:featureName}-port.ts
-  Interface WritePort + InjectionToken IWrite${input:featureName}PortProvider.
-
-- application/usecases/list-${input:featureName}s-use-case.ts
-  @Injectable, inyecta port y converter, logging, retorna ViewModels.
-  Referencia: features/notification/application/usecases/list-notifications-use-case.ts
-
-- application/usecases/create-${input:featureName}-use-case.ts
-
-## Infrastructure
-- infrastructure/adapter/${input:featureName}-memory-adapter.ts
-  Implementa ambos ports. Usa datos en memoria para desarrollo.
-  Referencia: features/notification/infrastructure/adapter/notification-memory-adapter.ts
-
-- infrastructure/converter/${input:featureName}-view-model-converter.ts
-  Implementa ConverterFunction.
-  Referencia: features/notification/infrastructure/converter/notification-view-model-converter.ts
-
-- infrastructure/controller/${input:featureName}-controller.ts
-  Express controller con registerRoutes(router), inyecta use cases directamente.
-  Referencia: features/notification/infrastructure/controller/notification-controller.ts
-
-## Presentation
-- presentation/view-models/${input:featureName}-view-model.ts
-  Plain TypeScript class con las propiedades del ViewModel.
-
-- presentation/arguments/create-${input:featureName}-arguments.ts
-  Class con decoradores de class-validator (@IsNotEmpty, @IsString, etc.).
-
-## DI
-- core/injection/providers/${input:featureName}-provider.ts
-  Array de providers: use cases + { provide: Token, useClass: Adapter } + controller.
-  Referencia: core/injection/providers/notification-provider.ts
+1. domain/entities/${input:featureName}.ts -- Entidad con constructor y metodos de negocio
+2. domain/${input:featureName}-type.ts -- Enums de dominio (si aplica)
+3. application/ports/read-${input:featureName}-port.ts -- Interface + InjectionToken
+4. application/ports/write-${input:featureName}-port.ts -- Interface + InjectionToken
+5. application/usecases/list-${input:featureName}s-use-case.ts -- @Injectable, port, converter, logging
+6. application/usecases/create-${input:featureName}-use-case.ts
+7. infrastructure/adapter/${input:featureName}-memory-adapter.ts -- Implementa ambos ports, datos en memoria
+8. infrastructure/converter/${input:featureName}-view-model-converter.ts -- ConverterFunction
+9. infrastructure/controller/${input:featureName}-controller.ts -- Express controller con registerRoutes
+10. presentation/view-models/${input:featureName}-view-model.ts -- Plain class
+11. presentation/arguments/create-${input:featureName}-arguments.ts -- class-validator
+12. core/injection/providers/${input:featureName}-provider.ts -- Array de providers
 
 Incluye 3-5 datos de ejemplo realistas en el adapter.
 
@@ -518,7 +519,7 @@ Genera:
    - @Injectable()
    - Constructor con: AbstractLogger, Ports via @Inject(Token), Converters
    - Metodo execute() con logging inicio/fin
-   - Referencia: busca use cases existentes en features/ para seguir el patron
+   - Referencia: sigue el patron de src/examples/example-use-case.ts
 
 2. El test unitario en
    features/${input:featureName}/tests/unit/${input:useCaseName}.spec.ts
@@ -584,7 +585,7 @@ Un Skill se carga **automaticamente** cuando Copilot detecta que aplica. Ideal p
 
 ```
 @workspace Crea un Agent Skill de testing para el proyecto BCPR.
-Basa los patrones en los tests existentes del proyecto.
+Usa los patrones descritos abajo (seran la referencia del equipo).
 
 Estructura:
 .github/skills/bcpr-testing/SKILL.md
@@ -910,6 +911,28 @@ Usa severidades:
 
 ---
 
+### Paso 1.8: Comparar "Antes vs Despues"
+
+Ahora repetimos **exactamente el mismo prompt** del Paso 1.0:
+
+```
+Crea un use case llamado ListNotificationsUseCase en
+features/notification/application/usecases/list-notifications-use-case.ts
+```
+
+**Compara con el resultado del Paso 1.0.** Ahora Copilot deberia:
+- Usar `@Injectable()` de `injection-js` (por las instrucciones globales)
+- Inyectar un Port via `@Inject(IReadNotificationsPortProvider)` (por las instrucciones de usecases)
+- Incluir logging con `this.logger.info('Event started: ...')` (por las instrucciones de usecases)
+- Seguir la nomenclatura del proyecto (por las instrucciones globales)
+- Referenciar el archivo de ejemplo `src/examples/example-use-case.ts` como patron
+
+> **Este es el momento wow real.** El mismo prompt, resultados completamente diferentes. Eso es lo que las instrucciones hacen por el equipo, sin esfuerzo extra en cada prompt.
+
+**Deshaz los cambios** antes de pasar al Ejercicio 2.
+
+---
+
 ## Ejercicio 2: Construir un Feature Nuevo con el Marco (50 min)
 
 > **Ahora usamos lo que construimos.** En lugar de escribir boilerplate, dejamos que nuestros prompts, instrucciones y agents hagan el trabajo pesado.
@@ -951,123 +974,59 @@ Copilot deberia generar toda la estructura del feature de notificaciones con:
 
 ### Paso 2.2: Refinar la capa Domain
 
-Revisa y ajusta las entidades generadas.
+Revisa lo que genero Copilot y ajusta si falta algo.
 
-**PROMPT en Modo Agent:**
+**PROMPT (nota lo corto que es -- las instrucciones de `domain-layer.instructions.md` hacen el trabajo):**
 
 ```
-@workspace Revisa y mejora los archivos de dominio en
-features/notification/domain/. Necesito:
-
-1. Un enum NotificationType con: PUSH, EMAIL, SMS
-2. Un enum NotificationStatus con: UNREAD, READ, ARCHIVED
-3. Una entidad Notification con:
-   - Propiedades: id, userId, title, message, type (NotificationType),
-     status (NotificationStatus), createdAt, readAt (nullable)
-   - Metodo markAsRead(): cambia status a READ y setea readAt = new Date()
-   - Metodo archive(): cambia status a ARCHIVED
-   - Metodo isRead(): boolean
-   - Funcion mapToNotification(source: Record<string, any>): Notification
-
-Sigue el patron establecido en el core para entidades de dominio.
+@workspace Revisa los archivos en features/notification/domain/.
+La entidad Notification necesita: enums para tipo (PUSH/EMAIL/SMS)
+y status (UNREAD/READ/ARCHIVED), metodos markAsRead(), archive(),
+isRead(), y las propiedades basicas de una notificacion.
 ```
 
-> **Observa:** Las instrucciones de `domain-layer.instructions.md` se activan automaticamente. Copilot no deberia sugerir @Injectable ni imports de Express.
+> **Observa:** No necesitas especificar "no uses @Injectable" ni "no importes Express" -- las instrucciones de domain-layer ya se lo dicen a Copilot automaticamente. **Esa es la ventaja del marco.**
 
 ---
 
 ### Paso 2.3: Refinar la capa Application (Ports + Use Cases)
 
-**PROMPT en Modo Agent:**
+**PROMPT (las instrucciones de `usecases-layer.instructions.md` agregan el logging y DI automaticamente):**
 
 ```
-@workspace Revisa y mejora los ports y use cases en
-features/notification/application/. Necesito:
-
-PORTS:
-- ReadNotificationsPort con: findByUserId(userId: string), findById(id: string)
-- WriteNotificationPort con: save(notification), update(notification), delete(id)
-- Cada uno con su InjectionToken exportado
-
-USE CASES:
-1. ListNotificationsUseCase
-   - Inyecta ReadNotificationsPort y NotificationViewModelConverter
-   - execute(userId: string) -> NotificationViewModel[]
-
-2. CreateNotificationUseCase
-   - Inyecta WriteNotificationPort
-   - execute(args: CreateNotificationArguments) -> Notification
-
-3. MarkAsReadUseCase
-   - Inyecta ambos ports
-   - execute(notificationId: string) -> Notification
-   - Lanza NotFoundError si no existe
-
-Todos con @Injectable(), logging al inicio/fin, y las dependencias
-inyectadas via @Inject(Token).
-
-Referencia: features/notification/application/usecases/ para el patron.
+@workspace Revisa los ports y use cases en features/notification/application/.
+Necesito 2 ports (ReadNotificationsPort y WriteNotificationPort) y
+3 use cases: listar por usuario, crear, y marcar como leida
+(lanzar NotFoundError si no existe).
 ```
+
+> **Observa:** No necesitas decir "@Injectable, @Inject, logging al inicio/fin" -- las instrucciones por capa ya lo cubren. Si Copilot los omite, pregunta: "Las instrucciones de usecases-layer dicen que el logging es obligatorio, puedes agregarlo?"
 
 ---
 
 ### Paso 2.4: Refinar la capa Infrastructure
 
-**PROMPT en Modo Agent:**
+**PROMPT:**
 
 ```
-@workspace Revisa y mejora la infraestructura en
-features/notification/infrastructure/. Necesito:
-
-1. ADAPTER: notification-memory-adapter.ts
-   - @Injectable(), implementa ReadNotificationsPort Y WriteNotificationPort
-   - Usa Map<string, Notification> en memoria (simula DynamoDB)
-   - Pre-carga 5 notificaciones realistas:
-     * "Tu transferencia ACH fue procesada" (PUSH, READ)
-     * "Nuevo estado de cuenta disponible" (EMAIL, UNREAD)
-     * "Codigo de verificacion: 4521" (SMS, READ)
-     * "Mantenimiento programado para este sabado" (PUSH, UNREAD)
-     * "Tu pago de $150.00 fue confirmado" (PUSH, UNREAD)
-   - userId de ejemplo: "user-001" y "user-002"
-   
-   Referencia: features/notification/infrastructure/adapter/notification-memory-adapter.ts
-
-2. CONVERTER: notification-view-model-converter.ts
-   - @Injectable(), implementa ConverterFunction<Notification, NotificationViewModel>
-   - Transforma: agrega isRead boolean, formatea fechas, etc.
-
-3. CONTROLLER: notification-controller.ts
-   - @Injectable(), inyecta use cases directamente via constructor
-   - registerRoutes(router: Router) method
-   - GET /api/notifications/:userId -> listNotificationsUseCase.execute(userId)
-   - POST /api/notifications -> createNotificationUseCase.execute(body)
-     Validates body with class-validator (plainToInstance + validate)
-   - PATCH /api/notifications/:id/read -> markAsReadUseCase.execute(id)
-   - Error handling delegated to errorInterceptor middleware
+@workspace Revisa la infraestructura en features/notification/infrastructure/.
+El adapter debe usar Map en memoria con 5 notificaciones realistas
+de ejemplo (transferencias, estados de cuenta, codigos SMS).
+El controller necesita 3 endpoints: GET por userId, POST crear, PATCH marcar leida.
 ```
+
+> **Observa:** Las instrucciones de `adapters-layer.instructions.md` y `controllers-layer.instructions.md` aseguran que el adapter implemente los ports y que el controller use `registerRoutes(router)` con validacion de class-validator.
 
 ---
 
 ### Paso 2.5: Presentation (ViewModels y Arguments)
 
-**PROMPT en Modo Agent:**
+**PROMPT:**
 
 ```
-@workspace Crea/mejora los archivos de presentacion:
-
-1. presentation/view-models/notification-view-model.ts
-   - Plain TypeScript class
-   - Propiedades: id, userId, title, message,
-     type, status, isRead (boolean), createdAt, readAt
-
-2. presentation/arguments/create-notification-arguments.ts
-   - Class con decoradores de class-validator:
-     * userId: @IsNotEmpty(), @IsString()
-     * title: @IsNotEmpty(), @IsString()
-     * message: @IsNotEmpty(), @IsString()
-     * type: @IsEnum(NotificationType)
-
-Referencia: features/notification/presentation/ para el formato.
+@workspace Revisa los archivos de presentacion en features/notification/presentation/.
+El ViewModel necesita las propiedades de la notificacion mas un campo
+isRead boolean. Los Arguments del POST necesitan validacion con class-validator.
 ```
 
 ---
@@ -1105,6 +1064,54 @@ Referencia: features/notification/presentation/ para el formato.
 
 ---
 
+### Checkpoint: Verificar que funciona
+
+> **No te saltes este paso.** Copilot genera codigo, pero nosotros verificamos que funcione.
+
+**En la terminal:**
+
+```bash
+# 1. Verificar que compila sin errores
+npx tsc --noEmit
+
+# 2. Arrancar el servidor
+npm run dev
+```
+
+**En otra terminal (o usa la de VS Code):**
+
+```bash
+# 3. Health check
+curl http://localhost:3000/health
+
+# 4. Listar notificaciones (debe retornar las del seed)
+curl http://localhost:3000/api/notifications/user-001
+
+# 5. Crear una notificacion
+curl -X POST http://localhost:3000/api/notifications \
+  -H "Content-Type: application/json" \
+  -d '{"userId":"user-001","title":"Test","message":"Desde el workshop","type":"PUSH"}'
+
+# 6. Marcar como leida
+curl -X PATCH http://localhost:3000/api/notifications/notif-002/read
+```
+
+**Que esperar:**
+- Paso 1: Sin errores de TypeScript
+- Paso 4: JSON con array de notificaciones (`success: true`)
+- Paso 5: 201 con la notificacion creada
+- Paso 6: 200 con status "READ"
+
+**Si algo falla**, usa Copilot para arreglarlo:
+```
+@workspace El servidor da este error: [pega el error].
+Revisa el feature de notificaciones y corrigelo.
+```
+
+> **Este es el flujo real:** generar con IA -> verificar -> iterar si falla. Copilot no es perfecto, pero **iterar con el es rapido.**
+
+---
+
 ### Paso 2.7: Consultar al Arquitecto (demo del agent)
 
 Selecciona **"BCPR Architect"** del dropdown de agentes y preguntale:
@@ -1119,7 +1126,43 @@ Falta algo para que este listo para produccion?
 
 ---
 
-### Paso 2.8: Desafio Bonus -- Preferencias de Notificacion
+### Paso 2.8: Experimentar Tab Completions (uso diario)
+
+> **El 80% de tu interaccion diaria con Copilot no es Chat -- es Tab.** Vamos a practicarlo.
+
+1. **Crea un archivo nuevo** en `features/notification/application/usecases/` llamado `delete-notification-use-case.ts`
+
+2. **Escribe solo esto** (no copies, escribe letra por letra):
+   ```typescript
+   import { Injectable, Inject } from 'injection-js';
+   ```
+
+3. **Presiona Enter** y espera -- Copilot deberia sugerir el siguiente import (`AbstractLogger`). Presiona `Tab` para aceptar.
+
+4. **Sigue escribiendo** el nombre de la clase:
+   ```typescript
+   @Injectable()
+   export class DeleteNotificationUseCase {
+   ```
+
+5. **Observa** como Copilot autocompleta:
+   - El constructor con las dependencias inyectadas
+   - El metodo `execute()` con logging
+   - Los tipos correctos de los ports
+
+6. **Acepta con Tab** lo que este bien, **ignora con Esc** lo que no, y **edita** lo que necesite ajuste.
+
+> **Tips de Tab completions:**
+> - `Tab` = aceptar toda la sugerencia
+> - `Ctrl+→` (o `Cmd+→`) = aceptar palabra por palabra
+> - `Alt+]` / `Alt+[` = ver sugerencias alternativas
+> - `Esc` = rechazar
+
+> **Clave:** Las instrucciones de `usecases-layer.instructions.md` mejoran las sugerencias Tab tambien, no solo las del Chat. Por eso vale la pena mantener las instrucciones actualizadas.
+
+---
+
+### Paso 2.9: Desafio Bonus -- Preferencias de Notificacion
 
 > **Opcional** para quienes terminaron rapido.
 
@@ -1227,13 +1270,25 @@ Este prompt verifica las dependencias entre capas y que todos los patrones se cu
 
 ---
 
-### Paso 3.6: Refactoring con /fix (si hay tiempo)
+### Paso 3.6: Correr los tests
 
-Si el QA o la revision encontraron problemas:
+```bash
+npm test
+```
 
-1. Selecciona el codigo con el problema
-2. Usa `/fix` para que Copilot proponga la correccion
-3. Revisa y acepta
+**Que esperar:**
+- Tests unitarios: use cases con mocks pasan
+- Tests de entidad: logica de dominio pura pasa
+- Tests de integracion: endpoints responden correctamente con supertest
+
+**Si algun test falla**, usa Copilot:
+```
+@workspace Este test falla con el error: [pega el error]. Corrigelo.
+```
+
+O usa `/fix` seleccionando el codigo del test que falla.
+
+> **Tip:** El feedback loop completo es: generar test con Copilot -> correr `npm test` -> si falla, pegar el error en Copilot -> iterar. Con practica, este ciclo toma segundos.
 
 ---
 
