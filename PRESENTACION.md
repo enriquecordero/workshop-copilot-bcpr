@@ -1,6 +1,6 @@
 # GitHub Copilot para BCPR — De Autocomplete a Operador
 
-> **Workshop hands-on · 2.5 horas**
+> **Workshop hands-on · 3 horas**
 > Equipo de desarrollo BCPR
 
 ---
@@ -67,7 +67,8 @@ La AI no genera perfecto al primer intento. **Eso es normal.** Lo que importa es
 | **Ejercicio 1** | Montar el marco de Copilot para BCPR | 45 min |
 | **Ejercicio 2** | Construir el feature de Notificaciones con el marco | 50 min |
 | **Ejercicio 3** | Tests y validacion con el Agente QA | 25 min |
-| **Bonus** | Introduccion a Harness Engineering | 15 min |
+| **Ejercicio 4** | QA completo: test plan, caza de bugs, datos, exploratorio | 30 min |
+| **Bonus** | Introduccion a Harness Engineering | 10 min |
 
 ---
 
@@ -270,6 +271,60 @@ Tests:       17 passed, 17 total
 
 ---
 
+## Ejercicio 4: QA Completo con Copilot (30 min)
+
+### El Problema: La Trampa del Codigo Bonito
+
+La AI genera codigo que **se ve profesional**: bien formateado, bien nombrado, compila sin errores.
+
+Eso baja tu guardia. Pero el codigo puede tener:
+- Logica invertida que "se lee bien"
+- Validaciones faltantes que TypeScript no atrapa
+- Calculos off-by-one camuflados
+- Vulnerabilidades de seguridad sutiles (IDOR)
+
+> **Generar codigo es facil. Validar codigo es donde esta el valor.**
+
+### Las 5 Actividades
+
+| Paso | Actividad | Herramienta |
+|------|-----------|-------------|
+| 4.1 | **Diseñar test plan** — plan de pruebas funcional antes de codear tests | Copilot Ask + template |
+| 4.2 | **Cazar bugs** — 6 bugs intencionales en codigo "generado por AI" | Copilot + Agente QA |
+| 4.3 | **Datos de prueba** — datasets realistas con acentos, emojis, injection | Copilot Agent |
+| 4.4 | **Testing exploratorio** — curls agresivos sugeridos por Copilot | Copilot + curl |
+| 4.5 | **Reporte de calidad** — documento listo para adjuntar al PR | Agente BCPR QA |
+
+### El Reto: Caza de Bugs
+
+Archivo con **6 bugs intencionales** que simulan errores tipicos de AI:
+
+```
+Lectura manual rapida:     1-2 de 6
+Copilot Chat @workspace:   4-5 de 6
+Agente BCPR QA:            5-6 de 6
+Los tres combinados:       6 de 6
+```
+
+> **Leccion:** Ningun metodo solo encuentra todo. El loop completo es: **revisar → AI analiza → QA agent audita → humano decide**.
+
+### Copilot como Tester Exploratorio
+
+```bash
+# Copilot sugiere vectores de ataque que un dev no pensaria:
+curl -X POST localhost:3000/api/notifications \
+  -H "Content-Type: text/plain" \
+  -d '{"userId":"user-001","title":"T","message":"M","type":"PUSH"}'
+
+curl localhost:3000/api/notifications/user-%3Cscript%3E
+
+curl -X DELETE localhost:3000/api/notifications/notif-001
+```
+
+> Copilot no solo genera codigo — puede **pensar como un atacante**.
+
+---
+
 ## Bonus: Harness Engineering — El Siguiente Nivel
 
 ### Los 3 Niveles de AI-Assisted Development
@@ -335,6 +390,9 @@ Lo que falta: **el pipeline** (el orden disciplinado) y **la puerta humana** (ap
 | Archivo de referencia | `src/examples/example-use-case.ts` | Copilot + devs |
 | Feature completo | `src/features/notification/` | Ejemplo vivo |
 | 17 tests | `tests/` | Referencia de testing |
+| Plan de pruebas | `docs/test-plan-notifications.md` | QA + equipo |
+| Reto de caza de bugs | `src/examples/qa-challenge-buggy-code.ts` | Practica continua |
+| Reporte de calidad | `docs/qa-report-notifications.md` | PR reviews |
 
 **Todo se commitea al repo. Todo aplica desde el dia 1.**
 

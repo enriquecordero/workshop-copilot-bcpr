@@ -9,6 +9,7 @@
 - [Ejercicio 1: Montar el Marco de Copilot para BCPR](#-ejercicio-1-montar-el-marco-de-copilot-para-bcpr)
 - [Ejercicio 2: Construir un Feature Nuevo con el Marco](#-ejercicio-2-construir-un-feature-nuevo-con-el-marco)
 - [Ejercicio 3: Tests y Validacion con el Agente QA](#-ejercicio-3-tests-y-validacion-con-el-agente-qa)
+- [Ejercicio 4: QA Completo — Caza de Bugs, Test Plan y Datos](#-ejercicio-4-qa-completo--caza-de-bugs-test-plan-y-datos)
 - [Bonus: Introduccion a Harness Engineering](#bonus-introduccion-a-harness-engineering)
 - [Referencia Rapida](#-referencia-rapida)
 - [Recursos Adicionales](#-recursos-adicionales)
@@ -17,7 +18,7 @@
 
 ## Introduccion
 
-Este workshop practico de **2.5 horas** tiene dos objetivos:
+Este workshop practico de **3 horas** tiene dos objetivos:
 
 1. **Montar un marco de personalizacion de Copilot** (instrucciones, skills, agents, prompts) que todo el equipo BCPR pueda usar desde el dia 1
 2. **Usar ese marco para construir un feature nuevo** siguiendo la arquitectura limpia del proyecto
@@ -233,8 +234,9 @@ git --version
 | 1:00 - 1:05 | Break | Descanso y Q&A rapido | - |
 | 1:05 - 1:50 | Ejercicio 2 | Construir el feature de Notificaciones usando el marco + verificar con curl | Agent + Tab |
 | 1:50 - 1:55 | Break | Descanso rapido | - |
-| 1:55 - 2:25 | Ejercicio 3 | Tests, `npm test`, validacion con el agente QA | Agent + /tests |
-| 2:25 - 2:30 | Cierre | Recap, que commitear, y como mantener las customizaciones | - |
+| 1:55 - 2:20 | Ejercicio 3 | Tests, `npm test`, validacion con el agente QA | Agent + /tests |
+| 2:20 - 2:50 | Ejercicio 4 | QA completo: test plan, caza de bugs, datos de prueba | Agent + QA |
+| 2:50 - 3:00 | Cierre | Recap, que commitear, y como mantener las customizaciones | - |
 
 > **Nota para el instructor:** Si el setup toma mas de 15 minutos, reduce los pasos bonus del Ejercicio 2. Lo mas importante es que completen el Ejercicio 1 (el marco) y al menos el scaffold del feature en el Ejercicio 2.
 
@@ -1304,6 +1306,259 @@ O usa `/fix` seleccionando el codigo del test que falla.
 
 ---
 
+## Ejercicio 4: QA Completo — Caza de Bugs, Test Plan y Datos (30 min)
+
+> **Este ejercicio enseña a usar Copilot como herramienta de QA**, no solo de generacion. Inspirado en el enfoque de [workshop-githubcopilot-qa](https://github.com/armandoblanco/workshop-githubcopilot-qa).
+
+### Objetivos
+
+- Diseñar un plan de pruebas funcional usando Copilot
+- Encontrar bugs en codigo "generado por AI" usando el agente QA
+- Generar datos de prueba realistas con edge cases
+- Hacer testing exploratorio guiado por AI
+- Producir un reporte de calidad
+
+---
+
+### Paso 4.1: Diseñar un Plan de Pruebas con Copilot (5 min)
+
+El primer paso de QA profesional no es escribir tests — es **diseñar un plan de pruebas**. Copilot puede ayudar.
+
+**PROMPT (Modo Ask):**
+
+```
+@workspace Actua como QA Lead. Diseña un plan de pruebas funcional
+para el feature de notificaciones que acabamos de construir.
+
+Usa como template: src/examples/qa-test-plan-template.md
+
+Incluye:
+- Casos de prueba positivos (happy path)
+- Casos de prueba negativos (validacion, errores)
+- Edge cases (limites, estados invalidos)
+- Casos de seguridad basica (IDOR, datos sensibles en logs)
+- Datos de prueba especificos para cada caso
+
+Genera al menos 8 casos de prueba con prioridad Alta o Media.
+Guarda el resultado en: docs/test-plan-notifications.md
+```
+
+> **Observa:** Copilot genera un plan estructurado, no codigo. Este plan es el **contrato de calidad** que guia todo el testing. En el harness engineering, esto seria la "Fase 2: Destilacion".
+
+**Evalua el plan generado:**
+- ¿Los casos son especificos o genericos?
+- ¿Cubren los 6 endpoints (GET lista, GET vacio, POST valido, POST invalido tipo, POST sin campos, PATCH read, PATCH 404)?
+- ¿Incluyen edge cases reales (userId vacio, notificationId inexistente, tipo invalido)?
+- ¿Mencionan seguridad (datos sensibles en logs, IDOR)?
+
+Si el plan es muy generico, refuerza:
+
+```
+Los casos CP-003 y CP-005 son muy genericos. Hazlos especificos
+al proyecto BCPR: usa los InjectionTokens reales, los enums
+NotificationType y NotificationStatus, y los endpoints exactos
+del controller.
+```
+
+---
+
+### Paso 4.2: Reto de Caza de Bugs — "El Codigo que se Ve Bien" (10 min)
+
+> **La trampa de la AI:** el codigo generado por AI se ve pulido, esta bien formateado, y compila sin errores. Eso baja tu guardia. Pero puede tener bugs sutiles que solo un review critico detecta.
+
+Tenemos un archivo con **6 bugs intencionales** que simulan errores tipicos de codigo generado por AI.
+
+**Paso 1: Intenta encontrar bugs tu mismo (2 min)**
+
+Abre `src/examples/qa-challenge-buggy-code.ts` y leelo rapidamente. ¿Cuantos bugs encuentras a simple vista?
+
+> La mayoria de developers encuentran 1-2 en una lectura rapida. Son bugs que "se ven correctos" — exactamente el tipo que la AI genera.
+
+**Paso 2: Pide ayuda a Copilot (3 min)**
+
+```
+@workspace Analiza src/examples/qa-challenge-buggy-code.ts como
+un revisor de codigo senior. Busca:
+- Logica incorrecta o invertida
+- Validaciones faltantes
+- Edge cases no manejados
+- Vulnerabilidades de seguridad
+- Calculos matematicos incorrectos
+- Transiciones de estado invalidas
+
+Reporta cada bug con: ubicacion, severidad, descripcion, y fix sugerido.
+```
+
+**Paso 3: Lanza al agente QA (3 min)**
+
+Selecciona **"BCPR QA"** del dropdown:
+
+```
+Revisa src/examples/qa-challenge-buggy-code.ts como si fuera
+codigo generado por AI que un developer te pide aprobar.
+
+Aplica los criterios del skill bcpr-testing:
+- ¿Las transiciones de estado son correctas?
+- ¿Las validaciones son suficientes?
+- ¿Hay problemas de seguridad?
+- ¿Los calculos son correctos?
+
+Reporta por severidad: Bloqueante / Alto / Medio / Bajo.
+```
+
+**Paso 4: Compara resultados (2 min)**
+
+| Metodo | Bugs encontrados (tipico) |
+|--------|---------------------------|
+| Lectura manual rapida | 1-2 de 6 |
+| Copilot Chat `@workspace` | 4-5 de 6 |
+| Agente BCPR QA | 5-6 de 6 |
+| Los tres combinados | **6 de 6** |
+
+> **Leccion clave:** Ningun metodo solo encuentra todo. El loop es: **revisar → AI analiza → QA agent audita → humano decide**. Es el mismo principio del harness: capas de verificacion.
+
+<details>
+<summary><strong>Spoiler: Los 6 Bugs</strong> (no abras hasta intentar)</summary>
+
+1. **resolve() sin validar CLOSED** — Un ticket cerrado puede "resolverse" de vuelta. Deberia lanzar error si status === CLOSED.
+2. **close() sin validar RESOLVED** — Un ticket OPEN puede cerrarse directamente, saltandose el flujo OPEN→RESOLVED→CLOSED.
+3. **isHighPriority() excluye CRITICAL** — CRITICAL es mas alto que HIGH pero el metodo retorna false para tickets criticos.
+4. **execute() no valida userId** — Si userId es vacio, undefined, o null, ejecuta la query sin error. Deberia validar.
+5. **Calculo de ageInDays es ageInHours** — Divide entre `1000 * 60 * 60` (ms→horas) en vez de `1000 * 60 * 60 * 24` (ms→dias).
+6. **IDOR en el controller** — Toma userId del query param sin validar contra el usuario autenticado. Cualquiera puede ver tickets de otro usuario.
+
+</details>
+
+---
+
+### Paso 4.3: Generar Datos de Prueba Realistas (5 min)
+
+Los tests son tan buenos como sus datos. Copilot puede generar datasets que cubren edge cases que no pensarias.
+
+**PROMPT:**
+
+```
+@workspace Genera un archivo de datos de prueba para el feature
+de notificaciones en: src/features/notification/tests/test-data.ts
+
+Incluye:
+- 5 notificaciones validas con diferentes tipos (EMAIL, PUSH, SMS)
+  y estados (UNREAD, READ, ARCHIVED)
+- 3 conjuntos de datos invalidos para crear notificaciones
+  (sin titulo, sin userId, tipo invalido)
+- Datos con caracteres especiales: acentos (ñ, á, é), emojis,
+  caracteres HTML (<script>), y SQL injection ('; DROP TABLE --)
+- Un userId con formato UUID y uno con formato legacy "user-XXX"
+- Fechas edge: notificacion de hoy, de hace 1 ano, fecha futura
+
+Exporta como constantes tipadas que se puedan importar en los tests.
+```
+
+> **Por que esto importa:** Los datos genericos ("test1", "test2") no encuentran bugs. Los datos realistas con caracteres especiales, fechas limite, y formatos mixtos **si** los encuentran.
+
+**Evalua los datos generados:**
+- ¿Incluyo realmente los caracteres especiales o los "sanitizo"?
+- ¿Las fechas edge son reales (Date objects) o strings?
+- ¿Los datos invalidos son invalidos de formas diferentes?
+
+---
+
+### Paso 4.4: Testing Exploratorio Guiado por AI (5 min)
+
+Testing exploratorio = probar el sistema buscando comportamiento inesperado, sin un script fijo.
+
+Con el server corriendo (`npm run dev`), usa Copilot como copiloto de exploracion:
+
+**PROMPT:**
+
+```
+@workspace El server esta corriendo en localhost:3000. Actua como
+un tester exploratorio. Sugiereme 10 requests curl que podrian
+exponer bugs o comportamiento inesperado en el API de notificaciones.
+
+Piensa en:
+- Que pasa con payloads enormes?
+- Que pasa con Content-Type incorrecto?
+- Que pasa con metodos HTTP no soportados?
+- Que pasa con caracteres unicode en el userId?
+- Que pasa si envio campos extra no esperados?
+```
+
+**Ejecuta los curls sugeridos y observa:**
+
+```bash
+# Ejemplo: payload con campo extra (¿lo ignora o lo rechaza?)
+curl -s -X POST http://localhost:3000/api/notifications \
+  -H "Content-Type: application/json" \
+  -d '{"userId":"user-001","title":"Test","message":"Msg","type":"PUSH","admin":true}'
+
+# Ejemplo: Content-Type incorrecto
+curl -s -X POST http://localhost:3000/api/notifications \
+  -H "Content-Type: text/plain" \
+  -d '{"userId":"user-001","title":"Test","message":"Msg","type":"PUSH"}'
+
+# Ejemplo: metodo no soportado
+curl -s -X DELETE http://localhost:3000/api/notifications/notif-001
+
+# Ejemplo: userId con caracteres especiales
+curl -s http://localhost:3000/api/notifications/user-%3Cscript%3E
+```
+
+> **Insight:** Copilot no solo genera tests — puede **pensar como un atacante** y sugerir vectores de prueba que un developer no consideraria.
+
+---
+
+### Paso 4.5: Reporte de Calidad (5 min)
+
+Finalmente, genera un reporte consolidado de todo el QA realizado.
+
+**PROMPT (Agente BCPR QA):**
+
+```
+Genera un reporte de calidad del feature de notificaciones que incluya:
+
+1. RESUMEN EJECUTIVO: estado general del feature (listo / con riesgos / bloqueado)
+2. COBERTURA DE TESTS:
+   - Tests unitarios: cuantos, que cubren
+   - Tests de integracion: cuantos, que endpoints
+   - Edge cases cubiertos vs faltantes
+3. BUGS ENCONTRADOS: lista con severidad y estado (fijo / pendiente)
+4. DEUDA DE QA: que falta por probar (performance, concurrencia, datos masivos)
+5. RECOMENDACIONES: top 3 mejoras de calidad priorizadas
+
+Formato: markdown estructurado, listo para agregar al PR.
+Guarda en: docs/qa-report-notifications.md
+```
+
+> **Para llevar:** Este reporte es lo que adjuntas a un PR. Con el agente QA y Copilot, generarlo toma 5 minutos en vez de una hora.
+
+---
+
+### Troubleshooting Ejercicio 4
+
+| Problema | Solucion |
+|----------|----------|
+| El plan de pruebas es muy generico | Agrega contexto: "para el proyecto BCPR con injection-js y Express" |
+| Copilot no encuentra los 6 bugs | Usa prompts mas especificos: "busca bugs de seguridad" + "busca bugs de logica" por separado |
+| Los datos generados no tienen caracteres especiales | Insiste: "DEBES incluir estos caracteres exactos: ñ, á, <script>, '; DROP TABLE" |
+| El reporte es superficial | Agrega: "incluye lineas de codigo especificas y numeros de test" |
+
+---
+
+### Resumen del Ejercicio 4
+
+| Actividad | Que aprendieron | Herramienta |
+|-----------|-----------------|-------------|
+| Plan de pruebas | QA empieza con diseño, no con codigo | Copilot Ask + template |
+| Caza de bugs | El codigo "bonito" puede tener bugs sutiles | Copilot + Agente QA |
+| Datos de prueba | Datos genericos no encuentran bugs | Copilot Agent |
+| Testing exploratorio | Pensar como atacante, no como developer | Copilot + curl |
+| Reporte de calidad | Documentar QA para el PR | Agente BCPR QA |
+
+> **La leccion:** Copilot no es solo para **generar** codigo y tests. Es una herramienta de **QA completo**: diseño de pruebas, revision de codigo, generacion de datos, testing exploratorio, y reportes. El agente BCPR QA es el multiplicador — le da al equipo un "QA Lead virtual" que conoce los patrones del proyecto.
+
+---
+
 ## Referencia Rapida
 
 ### Los 5 Niveles de Personalizacion
@@ -1411,6 +1666,14 @@ O usa `/fix` seleccionando el codigo del test que falla.
 - [ ] Tests de integracion del controller (supertest, endpoints CRUD)
 - [ ] Revision QA completada
 - [ ] Revision de arquitectura con `/review-clean-arch`
+
+### QA Completo (Ejercicio 4)
+
+- [ ] Plan de pruebas funcional generado (`docs/test-plan-notifications.md`)
+- [ ] Reto de caza de bugs completado (6/6 encontrados)
+- [ ] Datos de prueba realistas generados (con caracteres especiales, edge cases)
+- [ ] Testing exploratorio ejecutado (curls con payloads inesperados)
+- [ ] Reporte de calidad generado (`docs/qa-report-notifications.md`)
 
 ---
 
@@ -1636,7 +1899,7 @@ Si, y eso es intencional. Pero con las instrucciones y skills que configuramos, 
 
 - **Workshop desarrollado para:** Equipo de desarrollo BCPR
 - **Tecnologias:** GitHub Copilot, TypeScript, injection-js, Express, class-validator, Jest
-- **Duracion:** 2.5 horas
+- **Duracion:** 3 horas
 - **Arquitectura:** Clean Architecture (Ports & Adapters)
 
 ---
