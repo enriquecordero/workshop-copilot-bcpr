@@ -96,8 +96,8 @@ export class SupportTicket {
     this.resolvedAt = new Date();
   }
 
-  // BUG 2: close() no verifica si esta en OPEN.
-  // Solo tickets RESOLVED deberian poder cerrarse.
+  // BUG 2: close() no verifica si esta en RESOLVED.
+  // Solo tickets RESOLVED deberian poder cerrarse (no OPEN ni IN_PROGRESS).
   close(): void {
     this.status = TicketStatus.CLOSED;
   }

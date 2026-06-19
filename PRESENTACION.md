@@ -65,7 +65,7 @@ La AI no genera perfecto al primer intento. **Eso es normal.** Lo que importa es
 |--------|-------------|--------|
 | **Demo** | Copilot SIN vs CON instrucciones | 5 min |
 | **Ejercicio 1** | Montar el marco de Copilot para BCPR | 45 min |
-| **Ejercicio 2** | Construir el feature de Notificaciones con el marco | 50 min |
+| **Ejercicio 2** | Construir el feature de Notificaciones con el marco | 45 min |
 | **Ejercicio 3** | Tests y validacion con el Agente QA | 25 min |
 | **Ejercicio 4** | QA completo: test plan, caza de bugs, datos, exploratorio | 30 min |
 | **Bonus** | Introduccion a Harness Engineering | 10 min |
@@ -170,7 +170,7 @@ export class ListItemsUseCase {
 
 ---
 
-## Ejercicio 2: Construir el Feature con el Marco (50 min)
+## Ejercicio 2: Construir el Feature con el Marco (45 min)
 
 ### Lo que vamos a construir
 
