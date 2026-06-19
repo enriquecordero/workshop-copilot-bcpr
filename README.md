@@ -58,18 +58,18 @@ El feature se integra al proyecto existente asi:
 
 ```
 src/
-├── core/                              # YA EXISTE - no lo tocamos
-│   ├── server/server.ts               # Express server
+├── core/                              # YA EXISTE - modificamos injector.ts y app.ts
+│   ├── server/
+│   │   ├── server.ts                  # Express server (puerto 3000)
+│   │   └── app.ts                     # <-- AGREGAMOS rutas del controller
 │   ├── injection/
-│   │   ├── injector.ts                # Container DI central
+│   │   ├── injector.ts                # <-- AGREGAMOS providers del feature
 │   │   └── providers/                 # <-- AGREGAMOS notification-provider.ts
 │   ├── middlewares/
 │   │   ├── interceptor/error-interceptor.ts
-│   │   ├── converter/converter-function.ts
-│   │   └── checker/authorization-checker.ts
+│   │   └── converter/converter-function.ts
 │   ├── error/                         # BaseError, NotFoundError, etc.
-│   ├── logger/                        # AbstractLogger
-│   └── modules/                       # Modulos compartidos
+│   └── logger/                        # AbstractLogger
 │
 ├── features/
 │   └── notification/                  # <-- ESTO ES LO QUE CONSTRUIMOS
@@ -87,7 +87,7 @@ src/
 │       │   └── notification-type.ts
 │       ├── infrastructure/
 │       │   ├── adapter/
-│       │   │   └── notification-dynamo-adapter.ts  (en memoria para el workshop)
+│       │   │   └── notification-memory-adapter.ts
 │       │   ├── converter/
 │       │   │   └── notification-view-model-converter.ts
 │       │   └── controller/
@@ -167,7 +167,7 @@ El `@workspace` le da a Copilot contexto de todo tu proyecto.
 | Uso | Ejemplo |
 |-----|---------|
 | Buscar patron | `@workspace como se implementan los use cases en este proyecto?` |
-| Referenciar existente | `@workspace crea algo similar al notification-dynamo-adapter.ts` |
+| Referenciar existente | `@workspace crea algo similar al notification-memory-adapter.ts` |
 | Entender flujo | `@workspace como llega un request desde el controller hasta el adapter?` |
 
 ### Modos de GitHub Copilot Chat
@@ -393,7 +393,7 @@ Estas editando un ADAPTER. Reglas del proyecto:
 - @Injectable() obligatorio
 - DEBE implementar el Port (interface) de application/ports/
 - Un adapter puede implementar multiples ports
-- Para DynamoDB: usar los helpers de core/aws-components/
+- Para el workshop: usar Map en memoria (en produccion seria DynamoDB)
 - Encapsular TODOS los detalles de infraestructura
 - NO contener logica de negocio (eso va en domain o use case)
 - Manejar errores de infra y transformar a errores de dominio:
@@ -472,9 +472,9 @@ Genera todos estos archivos:
 - application/usecases/create-${input:featureName}-use-case.ts
 
 ## Infrastructure
-- infrastructure/adapter/${input:featureName}-dynamo-adapter.ts
+- infrastructure/adapter/${input:featureName}-memory-adapter.ts
   Implementa ambos ports. Usa datos en memoria para desarrollo.
-  Referencia: features/notification/infrastructure/adapter/notification-dynamo-adapter.ts
+  Referencia: features/notification/infrastructure/adapter/notification-memory-adapter.ts
 
 - infrastructure/converter/${input:featureName}-view-model-converter.ts
   Implementa ConverterFunction.
@@ -714,31 +714,40 @@ describe('Notification', () => {
 });
 ```
 
-## Patron 3: Test de Adapter
+## Patron 3: Test de Integration (Controller)
 
-Mockear las dependencias de infraestructura (REST client, DynamoDB).
+Los tests de integracion usan supertest contra la app real.
 
 ```typescript
-describe('NotificationDynamoAdapter', () => {
-  const mockDynamoClient = {
-    query: jest.fn(),
-    put: jest.fn(),
-  };
+import 'reflect-metadata';
+import request from 'supertest';
+import { createApp } from '../../../../core/server/app';
 
-  let adapter: NotificationDynamoAdapter;
-
-  beforeEach(() => {
-    jest.clearAllMocks();
-    adapter = new NotificationDynamoAdapter(mockDynamoClient as any);
-  });
+describe('NotificationController (integration)', () => {
+  const app = createApp();
 
   it('debe retornar notificaciones del usuario', async () => {
-    mockDynamoClient.query.mockResolvedValue({
-      Items: [{ id: '1', title: 'Test' }]
-    });
+    const response = await request(app)
+      .get('/api/notifications/user-001')
+      .expect(200);
 
-    const result = await adapter.findByUserId('user-001');
-    expect(result).toHaveLength(1);
+    expect(response.body.success).toBe(true);
+    expect(response.body.data).toBeInstanceOf(Array);
+    expect(response.body.data.length).toBeGreaterThan(0);
+  });
+
+  it('debe crear una notificacion con datos validos', async () => {
+    const response = await request(app)
+      .post('/api/notifications')
+      .send({
+        userId: 'user-001',
+        title: 'Test',
+        message: 'Test message',
+        type: 'PUSH',
+      })
+      .expect(201);
+
+    expect(response.body.data).toHaveProperty('id');
   });
 });
 ```
@@ -1010,7 +1019,7 @@ Referencia: features/notification/application/usecases/ para el patron.
 @workspace Revisa y mejora la infraestructura en
 features/notification/infrastructure/. Necesito:
 
-1. ADAPTER: notification-dynamo-adapter.ts
+1. ADAPTER: notification-memory-adapter.ts
    - @Injectable(), implementa ReadNotificationsPort Y WriteNotificationPort
    - Usa Map<string, Notification> en memoria (simula DynamoDB)
    - Pre-carga 5 notificaciones realistas:
@@ -1021,7 +1030,7 @@ features/notification/infrastructure/. Necesito:
      * "Tu pago de $150.00 fue confirmado" (PUSH, UNREAD)
    - userId de ejemplo: "user-001" y "user-002"
    
-   Referencia: features/notification/infrastructure/adapter/notification-dynamo-adapter.ts
+   Referencia: features/notification/infrastructure/adapter/notification-memory-adapter.ts
 
 2. CONVERTER: notification-view-model-converter.ts
    - @Injectable(), implementa ConverterFunction<Notification, NotificationViewModel>
@@ -1063,29 +1072,36 @@ Referencia: features/notification/presentation/ para el formato.
 
 ---
 
-### Paso 2.6: Registrar en el Container DI
+### Paso 2.6: Registrar en el Container DI y conectar rutas
+
+> **Este paso conecta todo.** Sin esto, el feature existe pero no responde a requests.
 
 **PROMPT en Modo Agent:**
 
 ```
-@workspace Integra el feature de notificaciones con el core:
+@workspace Integra el feature de notificaciones con el core. Necesito 3 cambios:
 
 1. Crea core/injection/providers/notification-provider.ts
    Con el array notificationDependencies que incluya:
    - Use cases: ListNotificationsUseCase, CreateNotificationUseCase, MarkAsReadUseCase
    - Adapter mapping:
-     { provide: IReadNotificationsPortProvider, useClass: NotificationDynamoAdapter }
-     { provide: IWriteNotificationPortProvider, useClass: NotificationDynamoAdapter }
-   - Converter: NotificationViewModelConverter
+     { provide: IReadNotificationsPortProvider, useClass: NotificationMemoryAdapter }
+     { provide: IWriteNotificationPortProvider, useClass: NotificationMemoryAdapter }
+   - Converter: NotificationViewModelConverter con su token
    - Controller: NotificationController
-   
-   Referencia: core/injection/providers/notification-provider.ts
 
-2. Muestra donde agregar notificationDependencies en injector.ts
-   (NO modifiques el archivo, solo muestra el cambio necesario)
+2. Modifica core/injection/injector.ts:
+   - Importa notificationDependencies del nuevo provider
+   - Agrega ...notificationDependencies al array de ReflectiveInjector.resolveAndCreate
+
+3. Modifica core/server/app.ts:
+   - Importa el injector y NotificationController
+   - Obtiene la instancia del controller via injector.get(NotificationController)
+   - Crea un Router, registra las rutas con controller.registerRoutes(router)
+   - Monta el router con app.use(router) ANTES del errorInterceptor
 ```
 
-> **Nota:** No modificamos `injector.ts` directamente en el workshop para no afectar el proyecto. El instructor puede mostrar donde irian los cambios.
+> **Importante:** Los archivos `injector.ts` y `app.ts` ya tienen comentarios-guia que indican exactamente donde hacer los cambios. Busca los comentarios que empiezan con `// Los participantes...`
 
 ---
 
@@ -1177,10 +1193,10 @@ NO mockees nada -- las entidades de dominio son puras.
 ### Paso 3.3: Tests del adapter
 
 ```
-/tests Genera tests para el NotificationDynamoAdapter.
-Mockea las dependencias de infraestructura.
-Cubre: findByUserId con resultados, findByUserId sin resultados,
-findById existente, findById inexistente, save, delete.
+/tests Genera tests de integracion para el NotificationController.
+Usa supertest contra la app real (createApp()).
+Cubre: GET lista notificaciones, GET usuario sin datos,
+POST crear notificacion, POST datos invalidos, PATCH marcar como leida, PATCH 404.
 ```
 
 ---
@@ -1321,7 +1337,7 @@ Si el QA o la revision encontraron problemas:
 - [ ] `features/notification/application/usecases/mark-as-read-use-case.ts`
 
 **Infrastructure**
-- [ ] `features/notification/infrastructure/adapter/notification-dynamo-adapter.ts`
+- [ ] `features/notification/infrastructure/adapter/notification-memory-adapter.ts`
 - [ ] `features/notification/infrastructure/converter/notification-view-model-converter.ts`
 - [ ] `features/notification/infrastructure/controller/notification-controller.ts`
 
@@ -1334,9 +1350,9 @@ Si el QA o la revision encontraron problemas:
 
 ### Tests (Ejercicio 3)
 
-- [ ] Tests unitarios del use case principal
-- [ ] Tests de la entidad de dominio
-- [ ] Tests del adapter
+- [ ] Tests unitarios del use case principal (list, mark-as-read)
+- [ ] Tests de la entidad de dominio (markAsRead, archive, isRead)
+- [ ] Tests de integracion del controller (supertest, endpoints CRUD)
 - [ ] Revision QA completada
 - [ ] Revision de arquitectura con `/review-clean-arch`
 
@@ -1377,7 +1393,7 @@ Porque sin instrucciones, Copilot genera codigo generico. **Con** instrucciones 
 
 ### Como migrar el adapter de memoria a DynamoDB?
 
-1. Crear `NotificationDynamoAdapter` (el real) que use `aws-sdk`
+1. Crear `NotificationDynamoAdapter` que use `@aws-sdk/lib-dynamodb`
 2. Implementar los mismos ports: `ReadNotificationsPort` y `WriteNotificationPort`
 3. Cambiar el provider: `{ provide: IReadNotificationsPortProvider, useClass: NotificationDynamoAdapter }`
 4. **Los use cases no cambian.** Esa es la magia del patron Port-Adapter.
