@@ -214,8 +214,24 @@ git --version
 
 ### Extensiones de VS Code
 
-- **GitHub Copilot** -- Extension principal
-- **GitHub Copilot Chat** -- Chat integrado
+**Requeridas:**
+- **GitHub Copilot** (`github.copilot`) -- Extension principal de autocompletado
+- **GitHub Copilot Chat** (`github.copilot-chat`) -- Chat integrado y agents
+
+**Recomendadas para el workshop:**
+- **REST Client** (`humao.rest-client`) -- Ejecutar archivos `.http` con un click (Paso 3.7)
+- **Error Lens** (`usernamehv.errorlens`) -- Ver errores de TypeScript inline sin hover
+- **Pretty TypeScript Errors** (`yoavbls.pretty-ts-errors`) -- Errores de TS mas legibles
+
+**Instalacion rapida (copiar y pegar en terminal):**
+
+```bash
+code --install-extension github.copilot
+code --install-extension github.copilot-chat
+code --install-extension humao.rest-client
+code --install-extension usernamehv.errorlens
+code --install-extension yoavbls.pretty-ts-errors
+```
 
 ### Acceso
 
@@ -1295,60 +1311,97 @@ O usa `/fix` seleccionando el codigo del test que falla.
 
 ---
 
-### Paso 3.7: Validacion E2E visual con Playwright CLI
+### Paso 3.7: Validacion E2E con archivos `.http` (REST Client)
 
-> **El objetivo:** Pedirle a Copilot que genere tests E2E y verlos correr en un browser real con `--headed`.
+> **El objetivo:** Pedirle a Copilot que genere archivos `.http` que sirven como tests manuales Y documentacion viva del API.
 
-**1. Instalar Playwright (si no esta):**
-
-```bash
-npm init playwright@latest -- --yes --quiet
-```
-
-Esto crea `playwright.config.ts` y descarga los browsers.
-
-**2. Pedirle a Copilot los tests E2E:**
+**1. Pedirle a Copilot los archivos `.http`:**
 
 ```
-@workspace Genera tests E2E con Playwright para el feature de notificaciones.
-Usa request context (APIRequestContext) para testear los 3 endpoints:
-- GET /api/notifications/:userId (con datos y vacio)
-- POST /api/notifications (valido e invalido)
-- PATCH /api/notifications/:id/read (existente y 404)
-El server corre en localhost:3000. Guarda en tests/e2e/notifications.spec.ts
+@workspace Genera un archivo .http (REST Client) para testear todos los endpoints
+del feature de notificaciones. Incluye:
+- Escenarios happy path y error para cada endpoint
+- Variables de entorno para el host
+- Comentarios explicando cada request
+Guarda en: http/notifications.http
 ```
 
-**3. Correr visualmente:**
+**2. El resultado (ejemplo de lo que Copilot genera):**
 
-```bash
-# Modo headed - ves el browser abrirse
-npx playwright test --headed
+```http
+### Variables
+@host = http://localhost:3000
 
-# Modo UI - interfaz interactiva con step-through
-npx playwright test --ui
+### ===== GET Notificaciones =====
 
-# Modo debug - pausa en cada paso para inspeccionar
-npx playwright test --debug
+### Listar notificaciones de usuario con datos
+GET {{host}}/api/notifications/user-001
+
+### Listar notificaciones de usuario sin datos (vacio)
+GET {{host}}/api/notifications/user-999
+
+### ===== POST Crear Notificacion =====
+
+### Crear notificacion valida
+POST {{host}}/api/notifications
+Content-Type: application/json
+
+{
+  "userId": "user-001",
+  "title": "Deploy completado",
+  "message": "El release v2.1.0 esta en produccion",
+  "type": "PUSH"
+}
+
+### Crear notificacion con tipo invalido (espera 422)
+POST {{host}}/api/notifications
+Content-Type: application/json
+
+{
+  "userId": "user-001",
+  "title": "Test",
+  "message": "Mensaje",
+  "type": "INVALIDO"
+}
+
+### Crear notificacion sin campos requeridos (espera 422)
+POST {{host}}/api/notifications
+Content-Type: application/json
+
+{
+  "userId": "user-001"
+}
+
+### ===== PATCH Marcar como Leida =====
+
+### Marcar notificacion existente como leida
+PATCH {{host}}/api/notifications/notif-002/read
+
+### Marcar notificacion inexistente (espera 404)
+PATCH {{host}}/api/notifications/id-que-no-existe/read
 ```
 
-**4. Ver el reporte HTML:**
+**3. Ejecutar:**
 
-```bash
-npx playwright show-report
-```
+- Click en `Send Request` sobre cualquier request (aparece arriba de cada `###`)
+- La respuesta se muestra en un panel al lado
+- Puedes ejecutar todos los requests en secuencia para validar el feature completo
 
-> **Observa:** `--headed` abre el browser para que veas la ejecucion. `--ui` es aun mejor: te muestra cada request, response, y puedes hacer step-by-step. Para APIs sin frontend, Playwright usa `request` context internamente, pero `--ui` te visualiza todo el flujo de requests.
+**4. Verificar:**
 
-**5. Bonus: Grabar un test con codegen (para features con UI):**
+| Request | Status esperado | Que validar |
+|---------|----------------|-------------|
+| GET user-001 | 200 | Array con 4 notificaciones |
+| GET user-999 | 200 | Array vacio `[]` |
+| POST valido | 201 | Notificacion creada con id |
+| POST tipo invalido | 422 | Error de validacion |
+| POST sin campos | 422 | Error de campos requeridos |
+| PATCH existente | 200 | `readAt` con timestamp |
+| PATCH inexistente | 404 | NotFoundError |
 
-```bash
-# Si tu feature tuviera frontend, podrias grabar tests asi:
-npx playwright codegen http://localhost:3000
-```
+> **Ventaja sobre curl:** Los archivos `.http` quedan en el repo como documentacion del API. Cualquier developer puede abrirlos y probar los endpoints con un click. Copilot los genera perfectos porque el formato es simple y declarativo.
 
-Esto abre dos ventanas: el browser donde interactuas y el Inspector que genera el codigo del test en tiempo real.
-
-> **Clave para el equipo BCPR:** Cuando un feature tenga frontend, pueden decirle a Copilot: "Genera tests E2E con Playwright para [feature]. Usa --headed para validacion visual." El skill de testing deberia incluir estos patrones.
+> **Para features con frontend (futuro):** Cuando BCPR tenga UI, consideren Playwright con `npx playwright test --headed` para validacion visual de flujos completos.
 
 ---
 
@@ -1723,7 +1776,8 @@ Guarda en: docs/qa-report-notifications.md
 - [ ] Tests de integracion del controller (supertest, endpoints CRUD)
 - [ ] Revision QA completada
 - [ ] Revision de arquitectura con `/review-clean-arch`
-- [ ] Tests E2E con Playwright (`npx playwright test --headed` pasa)
+- [ ] Archivo `.http` generado con todos los escenarios (7 requests)
+- [ ] Todos los requests responden con el status esperado via REST Client
 
 ### QA Completo (Ejercicio 4)
 
