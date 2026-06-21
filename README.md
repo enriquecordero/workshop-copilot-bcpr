@@ -1295,6 +1295,63 @@ O usa `/fix` seleccionando el codigo del test que falla.
 
 ---
 
+### Paso 3.7: Validacion E2E visual con Playwright CLI
+
+> **El objetivo:** Pedirle a Copilot que genere tests E2E y verlos correr en un browser real con `--headed`.
+
+**1. Instalar Playwright (si no esta):**
+
+```bash
+npm init playwright@latest -- --yes --quiet
+```
+
+Esto crea `playwright.config.ts` y descarga los browsers.
+
+**2. Pedirle a Copilot los tests E2E:**
+
+```
+@workspace Genera tests E2E con Playwright para el feature de notificaciones.
+Usa request context (APIRequestContext) para testear los 3 endpoints:
+- GET /api/notifications/:userId (con datos y vacio)
+- POST /api/notifications (valido e invalido)
+- PATCH /api/notifications/:id/read (existente y 404)
+El server corre en localhost:3000. Guarda en tests/e2e/notifications.spec.ts
+```
+
+**3. Correr visualmente:**
+
+```bash
+# Modo headed - ves el browser abrirse
+npx playwright test --headed
+
+# Modo UI - interfaz interactiva con step-through
+npx playwright test --ui
+
+# Modo debug - pausa en cada paso para inspeccionar
+npx playwright test --debug
+```
+
+**4. Ver el reporte HTML:**
+
+```bash
+npx playwright show-report
+```
+
+> **Observa:** `--headed` abre el browser para que veas la ejecucion. `--ui` es aun mejor: te muestra cada request, response, y puedes hacer step-by-step. Para APIs sin frontend, Playwright usa `request` context internamente, pero `--ui` te visualiza todo el flujo de requests.
+
+**5. Bonus: Grabar un test con codegen (para features con UI):**
+
+```bash
+# Si tu feature tuviera frontend, podrias grabar tests asi:
+npx playwright codegen http://localhost:3000
+```
+
+Esto abre dos ventanas: el browser donde interactuas y el Inspector que genera el codigo del test en tiempo real.
+
+> **Clave para el equipo BCPR:** Cuando un feature tenga frontend, pueden decirle a Copilot: "Genera tests E2E con Playwright para [feature]. Usa --headed para validacion visual." El skill de testing deberia incluir estos patrones.
+
+---
+
 ### Troubleshooting Ejercicio 3
 
 | Problema | Solucion |
@@ -1666,6 +1723,7 @@ Guarda en: docs/qa-report-notifications.md
 - [ ] Tests de integracion del controller (supertest, endpoints CRUD)
 - [ ] Revision QA completada
 - [ ] Revision de arquitectura con `/review-clean-arch`
+- [ ] Tests E2E con Playwright (`npx playwright test --headed` pasa)
 
 ### QA Completo (Ejercicio 4)
 
