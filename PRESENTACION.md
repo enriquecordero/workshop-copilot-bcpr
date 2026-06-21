@@ -268,27 +268,29 @@ Test Suites: 4 passed, 4 total
 Tests:       17 passed, 17 total
 ```
 
-### Paso 3.7: Validacion E2E Visual con Playwright
+### Paso 3.7: Validacion E2E con Archivos `.http`
 
-```bash
-# Instalar
-npm init playwright@latest -- --yes --quiet
+```http
+### Listar notificaciones
+GET http://localhost:3000/api/notifications/user-001
 
-# Pedirle a Copilot los tests E2E para la API
-# Correr visualmente:
-npx playwright test --headed     # Ver el browser
-npx playwright test --ui         # Interfaz interactiva (step-through)
-npx playwright test --debug      # Pausar en cada paso
-npx playwright show-report       # Reporte HTML
+### Crear notificacion
+POST http://localhost:3000/api/notifications
+Content-Type: application/json
+
+{"userId": "u1", "title": "Test", "message": "Hola", "type": "PUSH"}
+
+### Marcar como leida
+PATCH http://localhost:3000/api/notifications/notif-002/read
 ```
 
 **El prompt:**
 ```
-@workspace Genera tests E2E con Playwright para los 3 endpoints
-de notificaciones. Usa request context. Server en localhost:3000.
+@workspace Genera un archivo .http para testear todos los endpoints
+de notificaciones con escenarios happy path y error.
 ```
 
-> **Clave:** `--headed` y `--ui` te dan la prueba visual de que el feature funciona. No solo que compila y pasa unit tests — sino que responde correctamente end-to-end.
+> **Ventaja:** Un click en VS Code = request ejecutado. Quedan en el repo como documentacion viva del API. Zero config, zero dependencias.
 
 ---
 
