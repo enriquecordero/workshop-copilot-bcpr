@@ -254,7 +254,7 @@ Paso 3.3: "Genera tests de integracion del controller con supertest"
 
 El agente BCPR QA conoce los patrones de testing del proyecto (via SKILL.md) y revisa con esos criterios, no con criterios genericos.
 
-### Resultado Final
+### Resultado Final: Unit + Integration
 
 ```bash
 npm test
@@ -267,6 +267,28 @@ npm test
 Test Suites: 4 passed, 4 total
 Tests:       17 passed, 17 total
 ```
+
+### Paso 3.7: Validacion E2E Visual con Playwright
+
+```bash
+# Instalar
+npm init playwright@latest -- --yes --quiet
+
+# Pedirle a Copilot los tests E2E para la API
+# Correr visualmente:
+npx playwright test --headed     # Ver el browser
+npx playwright test --ui         # Interfaz interactiva (step-through)
+npx playwright test --debug      # Pausar en cada paso
+npx playwright show-report       # Reporte HTML
+```
+
+**El prompt:**
+```
+@workspace Genera tests E2E con Playwright para los 3 endpoints
+de notificaciones. Usa request context. Server en localhost:3000.
+```
+
+> **Clave:** `--headed` y `--ui` te dan la prueba visual de que el feature funciona. No solo que compila y pasa unit tests — sino que responde correctamente end-to-end.
 
 ---
 
