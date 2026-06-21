@@ -220,7 +220,7 @@ git --version
 
 **Recomendadas para el workshop:**
 - **REST Client** (`humao.rest-client`) -- Ejecutar archivos `.http` con un click (Paso 3.7)
-- **Error Lens** (`usernamehv.errorlens`) -- Ver errores de TypeScript inline sin hover
+- **Error Lens** (`usernamehehe.errorlens`) -- Ver errores de TypeScript inline sin hover
 - **Pretty TypeScript Errors** (`yoavbls.pretty-ts-errors`) -- Errores de TS mas legibles
 
 **Instalacion rapida (copiar y pegar en terminal):**
@@ -229,7 +229,7 @@ git --version
 code --install-extension github.copilot
 code --install-extension github.copilot-chat
 code --install-extension humao.rest-client
-code --install-extension usernamehv.errorlens
+code --install-extension usernamehehe.errorlens
 code --install-extension yoavbls.pretty-ts-errors
 ```
 
@@ -1252,7 +1252,7 @@ NO mockees nada -- las entidades de dominio son puras.
 
 ---
 
-### Paso 3.3: Tests del adapter
+### Paso 3.3: Tests de integracion del controller
 
 ```
 /tests Genera tests de integracion para el NotificationController.

@@ -407,7 +407,7 @@ Lo que falta: **el pipeline** (el orden disciplinado) y **la puerta humana** (ap
 | Que | Donde | Para quien |
 |-----|-------|------------|
 | Instrucciones por capa | `.github/instructions/` | Todo el equipo |
-| 4 slash commands | `.github/prompts/` | Todo el equipo |
+| 3 slash commands | `.github/prompts/` | Todo el equipo |
 | Skill de testing | `.github/skills/bcpr-testing/` | Todo el equipo |
 | 2 agents especializados | `.github/agents/` | Todo el equipo |
 | Archivo de referencia | `src/examples/example-use-case.ts` | Copilot + devs |
