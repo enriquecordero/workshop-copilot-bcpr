@@ -1234,7 +1234,13 @@ Incluye use cases GetPreferences y UpdatePreferences.
 
 El skill `bcpr-testing` deberia activarse automaticamente al pedir tests.
 
-**Abre el archivo del use case principal y selecciona todo el contenido, luego:**
+> **IMPORTANTE:** El comando `/tests` requiere que tengas **un archivo abierto con codigo seleccionado**. Si lo ejecutas sin seleccionar codigo, veras el error: *"To generate tests, open a file and select code to test."*
+
+**Pasos:**
+
+1. Abre el archivo `features/notification/application/usecases/list-notifications-use-case.ts`
+2. Selecciona **todo el contenido** del archivo (`Ctrl+A` / `Cmd+A`)
+3. Abre Copilot Chat y escribe:
 
 **PROMPT:**
 
@@ -1245,12 +1251,21 @@ Usa mocks para todas las dependencias inyectadas.
 ```
 
 > **Observa:** Si el skill se cargo correctamente, los tests seguiran el patron AAA con mocks del port, logger y converter -- sin que tengas que especificarlo.
+>
+> **Alternativa sin `/tests`:** Si prefieres no seleccionar codigo, puedes usar modo Agent directamente:
+> ```
+> @workspace Genera tests unitarios para ListNotificationsUseCase
+> siguiendo el skill bcpr-testing. Cubre: happy path, usuario sin
+> notificaciones, error del port.
+> ```
 
 ---
 
 ### Paso 3.2: Tests para la entidad de dominio
 
-**Abre `notification.ts` (dominio) y:**
+1. Abre `features/notification/domain/entities/notification.ts`
+2. Selecciona todo el contenido (`Cmd+A`)
+3. En Copilot Chat:
 
 ```
 /tests Genera tests para esta entidad de dominio.
@@ -1261,6 +1276,10 @@ NO mockees nada -- las entidades de dominio son puras.
 ---
 
 ### Paso 3.3: Tests de integracion del controller
+
+1. Abre `features/notification/infrastructure/controller/notification-controller.ts`
+2. Selecciona todo el contenido (`Cmd+A`)
+3. En Copilot Chat:
 
 ```
 /tests Genera tests de integracion para el NotificationController.
