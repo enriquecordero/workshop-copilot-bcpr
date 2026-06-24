@@ -2017,3 +2017,4 @@ Si, y eso es intencional. Pero con las instrucciones y skills que configuramos, 
 ---
 
 **Gracias por participar! Ahora tienen un marco de Copilot personalizado para BCPR que todo el equipo puede usar desde hoy.**
+# workshop-copilot-bcpr
