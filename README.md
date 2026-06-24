@@ -608,7 +608,7 @@ Un Skill se carga **automaticamente** cuando Copilot detecta que aplica. Ideal p
 
 **PROMPT en Modo Agent (copiar TODO el bloque):**
 
-```
+~~~
 @workspace Crea un Agent Skill de testing para el proyecto BCPR.
 Usa los patrones descritos abajo (seran la referencia del equipo).
 
@@ -788,7 +788,7 @@ describe('NotificationController (integration)', () => {
 - Importar `reflect-metadata` al inicio (por injection-js)
 - Cada test independiente: `beforeEach` con `jest.clearAllMocks()`
 - NO mockear entidades de dominio
-```
+~~~
 
 ---
 
