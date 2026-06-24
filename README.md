@@ -379,7 +379,9 @@ globales para el proyecto:
 
 Estas instrucciones se activan **automaticamente** segun el archivo que estas editando.
 
-**PROMPT en Modo Agent:**
+> **Instruccion:** Copia el siguiente bloque **completo** y pegalo en Copilot Chat en **modo Agent**. El prompt le dice a Copilot que cree los 4 archivos de instrucciones con su contenido. No los crees manualmente.
+
+**PROMPT en Modo Agent (copiar TODO el bloque):**
 
 ```
 @workspace Crea 4 archivos de instrucciones especificas por capa.
@@ -477,7 +479,9 @@ Estas editando un CONTROLLER (entry point HTTP). Reglas del proyecto:
 
 Los prompt files son **tareas reutilizables** que se invocan como `/nombre` en el chat.
 
-**PROMPT en Modo Agent:**
+> **Instruccion:** Copia el siguiente bloque **completo** y pegalo en Copilot Chat en **modo Agent**. El prompt crea los 3 archivos de prompts con todo su contenido.
+
+**PROMPT en Modo Agent (copiar TODO el bloque):**
 
 ```
 @workspace Crea 3 prompt files reutilizables para el equipo BCPR.
@@ -600,7 +604,9 @@ Reporta: CRITICO | IMPORTANTE | MENOR con archivo y linea.
 
 Un Skill se carga **automaticamente** cuando Copilot detecta que aplica. Ideal para testing.
 
-**PROMPT en Modo Agent:**
+> **Instruccion:** Copia el siguiente bloque **completo** y pegalo en Copilot Chat en **modo Agent**. Todo el contenido es parte del prompt — le dice a Copilot que archivo crear (`.github/skills/bcpr-testing/SKILL.md`) y que contenido poner dentro, incluyendo los patrones de testing, ejemplos de codigo, y las convenciones del equipo. No tienes que crear el archivo manualmente — Copilot lo hace por ti.
+
+**PROMPT en Modo Agent (copiar TODO el bloque):**
 
 ```
 @workspace Crea un Agent Skill de testing para el proyecto BCPR.
@@ -788,7 +794,9 @@ describe('NotificationController (integration)', () => {
 
 ### Paso 1.6: Crear Custom Agents
 
-**PROMPT en Modo Agent:**
+> **Instruccion:** Copia el siguiente bloque **completo**. El prompt crea los 2 archivos de agents con sus instrucciones de comportamiento.
+
+**PROMPT en Modo Agent (copiar TODO el bloque):**
 
 ```
 @workspace Crea 2 custom agents para el equipo BCPR:
